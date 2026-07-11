@@ -2266,7 +2266,8 @@ func ValidatePersistentVolume(pv *core.PersistentVolume, opts PersistentVolumeSp
 // ValidatePersistentVolumeUpdate tests to see if the update is legal for an end user to make.
 // newPv is updated with fields that cannot be changed.
 func ValidatePersistentVolumeUpdate(newPv, oldPv *core.PersistentVolume, opts PersistentVolumeSpecValidationOptions) field.ErrorList {
-	allErrs := ValidatePersistentVolume(newPv, opts)
+	allErrs := ValidateObjectMetaUpdate(&newPv.ObjectMeta, &oldPv.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidatePersistentVolumeSpec(&newPv.Spec, newPv.ObjectMeta.Name, false, field.NewPath("spec"), opts)...)
 
 	// if oldPV does not have ControllerExpandSecretRef then allow it to be set
 	if (oldPv.Spec.CSI != nil && oldPv.Spec.CSI.ControllerExpandSecretRef == nil) &&
@@ -2535,7 +2536,7 @@ func isDataSourceEqualDataSourceRef(dataSource *core.TypedLocalObjectReference, 
 // ValidatePersistentVolumeClaimUpdate validates an update to a PersistentVolumeClaim
 func ValidatePersistentVolumeClaimUpdate(newPvc, oldPvc *core.PersistentVolumeClaim, opts PersistentVolumeClaimSpecValidationOptions) field.ErrorList {
 	allErrs := ValidateObjectMetaUpdate(&newPvc.ObjectMeta, &oldPvc.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidatePersistentVolumeClaim(newPvc, opts)...)
+	allErrs = append(allErrs, ValidatePersistentVolumeClaimSpec(&newPvc.Spec, field.NewPath("spec"), opts)...)
 	newPvcClone := newPvc.DeepCopy()
 	oldPvcClone := oldPvc.DeepCopy()
 
@@ -4510,10 +4511,18 @@ type PodValidationOptions struct {
 // and is called by ValidatePodCreate and ValidatePodUpdate.
 func validatePodMetadataAndSpec(pod *core.Pod, opts PodValidationOptions) field.ErrorList {
 	metaPath := field.NewPath("metadata")
-	specPath := field.NewPath("spec")
 
 	allErrs := ValidateObjectMeta(&pod.ObjectMeta, true, ValidatePodName, metaPath)
-	allErrs = append(allErrs, ValidatePodSpecificAnnotations(pod.ObjectMeta.Annotations, &pod.Spec, metaPath.Child("annotations"), opts)...)
+	allErrs = append(allErrs, validatePodSpec(pod, opts)...)
+	return allErrs
+}
+
+// validatePodSpec validates the spec fields of a Pod without metadata validation.
+func validatePodSpec(pod *core.Pod, opts PodValidationOptions) field.ErrorList {
+	specPath := field.NewPath("spec")
+	allErrs := field.ErrorList{}
+
+	allErrs = append(allErrs, ValidatePodSpecificAnnotations(pod.ObjectMeta.Annotations, &pod.Spec, field.NewPath("metadata").Child("annotations"), opts)...)
 	allErrs = append(allErrs, ValidatePodSpec(&pod.Spec, &pod.ObjectMeta, specPath, opts)...)
 
 	// we do additional validation only pertinent for pods and not pod templates
@@ -5727,7 +5736,7 @@ var updatablePodSpecFields = []string{
 func ValidatePodUpdate(newPod, oldPod *core.Pod, opts PodValidationOptions) field.ErrorList {
 	fldPath := field.NewPath("metadata")
 	allErrs := ValidateObjectMetaUpdate(&newPod.ObjectMeta, &oldPod.ObjectMeta, fldPath)
-	allErrs = append(allErrs, validatePodMetadataAndSpec(newPod, opts)...)
+	allErrs = append(allErrs, validatePodSpec(newPod, opts)...)
 	allErrs = append(allErrs, ValidatePodSpecificAnnotationUpdates(newPod, oldPod, fldPath.Child("annotations"), opts)...)
 	specPath := field.NewPath("spec")
 
@@ -6297,7 +6306,7 @@ func ValidatePodEphemeralContainersUpdate(newPod, oldPod *core.Pod, opts PodVali
 	// Part 1: Validate newPod's spec and updates to metadata
 	fldPath := field.NewPath("metadata")
 	allErrs := ValidateObjectMetaUpdate(&newPod.ObjectMeta, &oldPod.ObjectMeta, fldPath)
-	allErrs = append(allErrs, validatePodMetadataAndSpec(newPod, opts)...)
+	allErrs = append(allErrs, validatePodSpec(newPod, opts)...)
 	allErrs = append(allErrs, ValidatePodSpecificAnnotationUpdates(newPod, oldPod, fldPath.Child("annotations"), opts)...)
 
 	// static pods don't support ephemeral containers #113935
@@ -6333,7 +6342,7 @@ func ValidatePodResize(newPod, oldPod *core.Pod, opts PodValidationOptions) fiel
 	// Part 1: Validate newPod's spec and updates to metadata
 	fldPath := field.NewPath("metadata")
 	allErrs := ValidateObjectMetaUpdate(&newPod.ObjectMeta, &oldPod.ObjectMeta, fldPath)
-	allErrs = append(allErrs, validatePodMetadataAndSpec(newPod, opts)...)
+	allErrs = append(allErrs, validatePodSpec(newPod, opts)...)
 
 	// static pods cannot be resized.
 	if _, ok := oldPod.Annotations[core.MirrorPodAnnotationKey]; ok {
@@ -7789,13 +7798,19 @@ func ValidateServiceAccount(serviceAccount *core.ServiceAccount) field.ErrorList
 // ValidateServiceAccountUpdate tests if required fields in the ServiceAccount are set.
 func ValidateServiceAccountUpdate(newServiceAccount, oldServiceAccount *core.ServiceAccount) field.ErrorList {
 	allErrs := ValidateObjectMetaUpdate(&newServiceAccount.ObjectMeta, &oldServiceAccount.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateServiceAccount(newServiceAccount)...)
 	return allErrs
 }
 
 // ValidateSecret tests if required fields in the Secret are set.
 func ValidateSecret(secret *core.Secret) field.ErrorList {
 	allErrs := ValidateObjectMeta(&secret.ObjectMeta, true, ValidateSecretName, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateSecretSpec(secret)...)
+	return allErrs
+}
+
+// ValidateSecretSpec validates the spec fields of a Secret.
+func ValidateSecretSpec(secret *core.Secret) field.ErrorList {
+	allErrs := field.ErrorList{}
 
 	dataPath := field.NewPath("data")
 	totalSize := 0
@@ -7886,7 +7901,7 @@ func ValidateSecretUpdate(newSecret, oldSecret *core.Secret) field.ErrorList {
 		// before validation is happening.
 	}
 
-	allErrs = append(allErrs, ValidateSecret(newSecret)...)
+	allErrs = append(allErrs, ValidateSecretSpec(newSecret)...)
 	return allErrs
 }
 
@@ -7899,6 +7914,13 @@ var ValidateConfigMapName = apimachineryvalidation.NameIsDNSSubdomain
 func ValidateConfigMap(cfg *core.ConfigMap) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, ValidateObjectMeta(&cfg.ObjectMeta, true, ValidateConfigMapName, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidateConfigMapSpec(cfg)...)
+	return allErrs
+}
+
+// ValidateConfigMapSpec validates the spec fields of a ConfigMap.
+func ValidateConfigMapSpec(cfg *core.ConfigMap) field.ErrorList {
+	allErrs := field.ErrorList{}
 
 	totalSize := 0
 
@@ -7944,7 +7966,7 @@ func ValidateConfigMapUpdate(newCfg, oldCfg *core.ConfigMap) field.ErrorList {
 		}
 	}
 
-	allErrs = append(allErrs, ValidateConfigMap(newCfg)...)
+	allErrs = append(allErrs, ValidateConfigMapSpec(newCfg)...)
 	return allErrs
 }
 
@@ -8369,6 +8391,13 @@ func ValidateNamespaceFinalizeUpdate(newNamespace, oldNamespace *core.Namespace)
 // ValidateEndpoints validates Endpoints on create and update.
 func ValidateEndpoints(endpoints, oldEndpoints *core.Endpoints) field.ErrorList {
 	allErrs := ValidateObjectMeta(&endpoints.ObjectMeta, true, ValidateEndpointsName, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateEndpointsSpec(endpoints, oldEndpoints)...)
+	return allErrs
+}
+
+// ValidateEndpointsSpec validates the spec fields of an Endpoints object.
+func ValidateEndpointsSpec(endpoints, oldEndpoints *core.Endpoints) field.ErrorList {
+	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, ValidateEndpointsSpecificAnnotations(endpoints.Annotations, field.NewPath("annotations"))...)
 
 	subsetErrs := validateEndpointSubsets(endpoints.Subsets, field.NewPath("subsets"))
@@ -8397,7 +8426,7 @@ func ValidateEndpointsCreate(endpoints *core.Endpoints) field.ErrorList {
 // happens.
 func ValidateEndpointsUpdate(newEndpoints, oldEndpoints *core.Endpoints) field.ErrorList {
 	allErrs := ValidateObjectMetaUpdate(&newEndpoints.ObjectMeta, &oldEndpoints.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateEndpoints(newEndpoints, oldEndpoints)...)
+	allErrs = append(allErrs, ValidateEndpointsSpec(newEndpoints, oldEndpoints)...)
 	return allErrs
 }
 

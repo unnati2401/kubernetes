@@ -78,9 +78,8 @@ var supportedLimitResponseType = sets.NewString(
 // PriorityLevelValidationOptions holds the validation options for a priority level object
 type PriorityLevelValidationOptions struct{}
 
-// ValidateFlowSchema validates the content of flow-schema
-func ValidateFlowSchema(fs *flowcontrol.FlowSchema) field.ErrorList {
-	allErrs := apivalidation.ValidateObjectMeta(&fs.ObjectMeta, false, ValidateFlowSchemaName, field.NewPath("metadata"))
+func validateFlowSchemaSpec(fs *flowcontrol.FlowSchema) field.ErrorList {
+	allErrs := field.ErrorList{}
 	specPath := field.NewPath("spec")
 	allErrs = append(allErrs, ValidateFlowSchemaSpec(fs.Name, &fs.Spec, specPath)...)
 	if mand, ok := internalbootstrap.MandatoryFlowSchemas[fs.Name]; ok {
@@ -96,9 +95,18 @@ func ValidateFlowSchema(fs *flowcontrol.FlowSchema) field.ErrorList {
 	return allErrs
 }
 
+// ValidateFlowSchema validates the content of flow-schema
+func ValidateFlowSchema(fs *flowcontrol.FlowSchema) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMeta(&fs.ObjectMeta, false, ValidateFlowSchemaName, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateFlowSchemaSpec(fs)...)
+	return allErrs
+}
+
 // ValidateFlowSchemaUpdate validates the update of flow-schema
 func ValidateFlowSchemaUpdate(old, fs *flowcontrol.FlowSchema) field.ErrorList {
-	return ValidateFlowSchema(fs)
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&fs.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateFlowSchemaSpec(fs)...)
+	return allErrs
 }
 
 // ValidateFlowSchemaSpec validates the content of flow-schema's spec

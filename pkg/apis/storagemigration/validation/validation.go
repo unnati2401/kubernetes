@@ -32,9 +32,8 @@ import (
 	apivalidation "k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-func ValidateStorageVersionMigration(svm *storagemigration.StorageVersionMigration) field.ErrorList {
+func validateStorageMigrationSpec(svm *storagemigration.StorageVersionMigration) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, apivalidation.ValidateObjectMeta(&svm.ObjectMeta, false, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
 
 	if len(svm.Spec.Resource.Resource) == 0 {
 		allErrs = append(allErrs, field.Required(field.NewPath("spec", "resource", "resource"), "resource is required to be set"))
@@ -54,9 +53,15 @@ func ValidateStorageVersionMigration(svm *storagemigration.StorageVersionMigrati
 	return allErrs
 }
 
+func ValidateStorageVersionMigration(svm *storagemigration.StorageVersionMigration) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMeta(&svm.ObjectMeta, false, apimachineryvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateStorageMigrationSpec(svm)...)
+	return allErrs
+}
+
 func ValidateStorageVersionMigrationUpdate(newSVMBundle, oldSVMBundle *storagemigration.StorageVersionMigration) field.ErrorList {
-	allErrs := ValidateStorageVersionMigration(newSVMBundle)
-	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&newSVMBundle.ObjectMeta, &oldSVMBundle.ObjectMeta, field.NewPath("metadata"))...)
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&newSVMBundle.ObjectMeta, &oldSVMBundle.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateStorageMigrationSpec(newSVMBundle)...)
 
 	// prevent changes to the spec
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newSVMBundle.Spec, oldSVMBundle.Spec, field.NewPath("spec"))...)

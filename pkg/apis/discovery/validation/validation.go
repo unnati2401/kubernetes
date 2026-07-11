@@ -59,6 +59,13 @@ var ValidateEndpointSliceName = apimachineryvalidation.NameIsDNSSubdomain
 // ValidateEndpointSlice validates an EndpointSlice.
 func ValidateEndpointSlice(endpointSlice, oldEndpointSlice *discovery.EndpointSlice) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMeta(&endpointSlice.ObjectMeta, true, ValidateEndpointSliceName, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateEndpointSliceSpec(endpointSlice, oldEndpointSlice)...)
+	return allErrs
+}
+
+// ValidateEndpointSliceSpec validates the spec fields of an EndpointSlice without metadata validation.
+func ValidateEndpointSliceSpec(endpointSlice, oldEndpointSlice *discovery.EndpointSlice) field.ErrorList {
+	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validateAddressType(endpointSlice.AddressType)...)
 	allErrs = append(allErrs, validatePorts(endpointSlice.Ports, field.NewPath("ports"))...)
 
@@ -84,7 +91,8 @@ func ValidateEndpointSliceCreate(endpointSlice *discovery.EndpointSlice) field.E
 
 // ValidateEndpointSliceUpdate validates an EndpointSlice when it is updated.
 func ValidateEndpointSliceUpdate(newEndpointSlice, oldEndpointSlice *discovery.EndpointSlice) field.ErrorList {
-	allErrs := ValidateEndpointSlice(newEndpointSlice, oldEndpointSlice)
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&newEndpointSlice.ObjectMeta, &oldEndpointSlice.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateEndpointSliceSpec(newEndpointSlice, oldEndpointSlice)...)
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newEndpointSlice.AddressType, oldEndpointSlice.AddressType, field.NewPath("addressType")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
 
 	return allErrs

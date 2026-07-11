@@ -297,6 +297,11 @@ func validateIngress(ingress *networking.Ingress, opts IngressValidationOptions)
 	return allErrs
 }
 
+// validateIngressSpec validates the spec fields of an Ingress without metadata validation.
+func validateIngressSpecOnly(ingress *networking.Ingress, opts IngressValidationOptions) field.ErrorList {
+	return ValidateIngressSpec(&ingress.Spec, field.NewPath("spec"), opts)
+}
+
 // ValidateIngressCreate validates Ingresses on create.
 func ValidateIngressCreate(ingress *networking.Ingress) field.ErrorList {
 	allErrs := field.ErrorList{}
@@ -323,7 +328,7 @@ func ValidateIngressUpdate(ingress, oldIngress *networking.Ingress) field.ErrorL
 		AllowRelaxedServiceNameValidation: allowRelaxedServiceNameValidation(oldIngress),
 	}
 
-	allErrs = append(allErrs, validateIngress(ingress, opts)...)
+	allErrs = append(allErrs, validateIngressSpecOnly(ingress, opts)...)
 	return allErrs
 }
 

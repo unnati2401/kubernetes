@@ -37,7 +37,12 @@ func ValidateRBACName(name string, prefix bool) []string {
 func ValidateRole(role *rbac.Role) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validation.ValidateObjectMeta(&role.ObjectMeta, true, ValidateRBACName, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidateRoleSpec(role)...)
+	return allErrs
+}
 
+func ValidateRoleSpec(role *rbac.Role) field.ErrorList {
+	allErrs := field.ErrorList{}
 	for i, rule := range role.Rules {
 		if err := ValidatePolicyRule(rule, true, field.NewPath("rules").Index(i)); err != nil {
 			allErrs = append(allErrs, err...)
@@ -50,9 +55,8 @@ func ValidateRole(role *rbac.Role) field.ErrorList {
 }
 
 func ValidateRoleUpdate(role *rbac.Role, oldRole *rbac.Role) field.ErrorList {
-	allErrs := ValidateRole(role)
-	allErrs = append(allErrs, validation.ValidateObjectMetaUpdate(&role.ObjectMeta, &oldRole.ObjectMeta, field.NewPath("metadata"))...)
-
+	allErrs := validation.ValidateObjectMetaUpdate(&role.ObjectMeta, &oldRole.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRoleSpec(role)...)
 	return allErrs
 }
 
@@ -63,7 +67,12 @@ type ClusterRoleValidationOptions struct {
 func ValidateClusterRole(role *rbac.ClusterRole, opts ClusterRoleValidationOptions) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validation.ValidateObjectMeta(&role.ObjectMeta, false, ValidateRBACName, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidateClusterRoleSpec(role, opts)...)
+	return allErrs
+}
 
+func ValidateClusterRoleSpec(role *rbac.ClusterRole, opts ClusterRoleValidationOptions) field.ErrorList {
+	allErrs := field.ErrorList{}
 	for i, rule := range role.Rules {
 		if err := ValidatePolicyRule(rule, false, field.NewPath("rules").Index(i)); err != nil {
 			allErrs = append(allErrs, err...)
@@ -94,9 +103,8 @@ func ValidateClusterRole(role *rbac.ClusterRole, opts ClusterRoleValidationOptio
 }
 
 func ValidateClusterRoleUpdate(role *rbac.ClusterRole, oldRole *rbac.ClusterRole, opts ClusterRoleValidationOptions) field.ErrorList {
-	allErrs := ValidateClusterRole(role, opts)
-	allErrs = append(allErrs, validation.ValidateObjectMetaUpdate(&role.ObjectMeta, &oldRole.ObjectMeta, field.NewPath("metadata"))...)
-
+	allErrs := validation.ValidateObjectMetaUpdate(&role.ObjectMeta, &oldRole.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateClusterRoleSpec(role, opts)...)
 	return allErrs
 }
 
@@ -129,6 +137,12 @@ func ValidatePolicyRule(rule rbac.PolicyRule, isNamespaced bool, fldPath *field.
 func ValidateRoleBinding(roleBinding *rbac.RoleBinding) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validation.ValidateObjectMeta(&roleBinding.ObjectMeta, true, ValidateRBACName, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidateRoleBindingSpec(roleBinding)...)
+	return allErrs
+}
+
+func ValidateRoleBindingSpec(roleBinding *rbac.RoleBinding) field.ErrorList {
+	allErrs := field.ErrorList{}
 
 	// TODO allow multiple API groups.  For now, restrict to one, but I can envision other experimental roles in other groups taking
 	// advantage of the binding infrastructure
@@ -159,9 +173,8 @@ func ValidateRoleBinding(roleBinding *rbac.RoleBinding) field.ErrorList {
 }
 
 func ValidateRoleBindingUpdate(roleBinding *rbac.RoleBinding, oldRoleBinding *rbac.RoleBinding) field.ErrorList {
-	allErrs := ValidateRoleBinding(roleBinding)
-	allErrs = append(allErrs, validation.ValidateObjectMetaUpdate(&roleBinding.ObjectMeta, &oldRoleBinding.ObjectMeta, field.NewPath("metadata"))...)
-
+	allErrs := validation.ValidateObjectMetaUpdate(&roleBinding.ObjectMeta, &oldRoleBinding.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRoleBindingSpec(roleBinding)...)
 	allErrs = append(allErrs, validation.ValidateImmutableField(roleBinding.RoleRef, oldRoleBinding.RoleRef, field.NewPath("roleRef")).WithOrigin("immutable").MarkAlpha().MarkCoveredByDeclarative()...)
 
 	return allErrs
@@ -170,6 +183,12 @@ func ValidateRoleBindingUpdate(roleBinding *rbac.RoleBinding, oldRoleBinding *rb
 func ValidateClusterRoleBinding(roleBinding *rbac.ClusterRoleBinding) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validation.ValidateObjectMeta(&roleBinding.ObjectMeta, false, ValidateRBACName, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidateClusterRoleBindingSpec(roleBinding)...)
+	return allErrs
+}
+
+func ValidateClusterRoleBindingSpec(roleBinding *rbac.ClusterRoleBinding) field.ErrorList {
+	allErrs := field.ErrorList{}
 
 	// TODO allow multiple API groups.  For now, restrict to one, but I can envision other experimental roles in other groups taking
 	// advantage of the binding infrastructure
@@ -200,9 +219,8 @@ func ValidateClusterRoleBinding(roleBinding *rbac.ClusterRoleBinding) field.Erro
 }
 
 func ValidateClusterRoleBindingUpdate(roleBinding *rbac.ClusterRoleBinding, oldRoleBinding *rbac.ClusterRoleBinding) field.ErrorList {
-	allErrs := ValidateClusterRoleBinding(roleBinding)
-	allErrs = append(allErrs, validation.ValidateObjectMetaUpdate(&roleBinding.ObjectMeta, &oldRoleBinding.ObjectMeta, field.NewPath("metadata"))...)
-
+	allErrs := validation.ValidateObjectMetaUpdate(&roleBinding.ObjectMeta, &oldRoleBinding.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateClusterRoleBindingSpec(roleBinding)...)
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(roleBinding.RoleRef, oldRoleBinding.RoleRef, field.NewPath("roleRef")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
 
 	return allErrs

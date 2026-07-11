@@ -43,7 +43,8 @@ func newValidatingWebhookConfiguration(hooks []admissionregistration.ValidatingW
 	}
 	return &admissionregistration.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "config",
+			Name:            "config",
+			ResourceVersion: "1",
 		},
 		Webhooks: hooks,
 	}
@@ -1020,7 +1021,8 @@ func newMutatingWebhookConfiguration(hooks []admissionregistration.MutatingWebho
 	}
 	return &admissionregistration.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "config",
+			Name:            "config",
+			ResourceVersion: "1",
 		},
 		Webhooks: hooks,
 	}
@@ -3010,7 +3012,8 @@ func TestValidateValidatingAdmissionPolicyUpdate(t *testing.T) {
 		name: "should pass on valid new ValidatingAdmissionPolicy",
 		config: &admissionregistration.ValidatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicySpec{
 				FailurePolicy: func() *admissionregistration.FailurePolicyType {
@@ -3070,7 +3073,8 @@ func TestValidateValidatingAdmissionPolicyUpdate(t *testing.T) {
 		name: "should pass on valid new ValidatingAdmissionPolicy with invalid old ValidatingAdmissionPolicy",
 		config: &admissionregistration.ValidatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicySpec{
 				FailurePolicy: func() *admissionregistration.FailurePolicyType {
@@ -3106,7 +3110,7 @@ func TestValidateValidatingAdmissionPolicyUpdate(t *testing.T) {
 		},
 		oldconfig: &admissionregistration.ValidatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "!!!",
+				Name: "config",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicySpec{},
 		},
@@ -3241,7 +3245,8 @@ func TestValidateValidatingAdmissionPolicyUpdate(t *testing.T) {
 		},
 		config: &admissionregistration.ValidatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicySpec{
 				MatchConstraints: &admissionregistration.MatchResources{
@@ -3446,7 +3451,8 @@ func validatingAdmissionPolicyWithExpressions(
 	auditAnnotations []admissionregistration.AuditAnnotation) *admissionregistration.ValidatingAdmissionPolicy {
 	return &admissionregistration.ValidatingAdmissionPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "config",
+			Name:            "config",
+			ResourceVersion: "1",
 		},
 		Spec: admissionregistration.ValidatingAdmissionPolicySpec{
 			MatchConstraints: &admissionregistration.MatchResources{
@@ -3489,7 +3495,8 @@ func mutatingAdmissionPolicyWithExpressions(
 	mutations []admissionregistration.Mutation) *admissionregistration.MutatingAdmissionPolicy {
 	return &admissionregistration.MutatingAdmissionPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "config",
+			Name:            "config",
+			ResourceVersion: "1",
 		},
 		Spec: admissionregistration.MutatingAdmissionPolicySpec{
 			MatchConstraints: &admissionregistration.MatchResources{
@@ -4018,7 +4025,8 @@ func TestValidateValidatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		name: "should pass on valid new ValidatingAdmissionPolicyBinding",
 		config: &admissionregistration.ValidatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicyBindingSpec{
 				PolicyName: "xyzlimit-scale.example.com",
@@ -4090,7 +4098,8 @@ func TestValidateValidatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		name: "should pass on valid new ValidatingAdmissionPolicyBinding with invalid old ValidatingAdmissionPolicyBinding",
 		config: &admissionregistration.ValidatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicyBindingSpec{
 				PolicyName: "xyzlimit-scale.example.com",
@@ -4125,7 +4134,7 @@ func TestValidateValidatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		},
 		oldconfig: &admissionregistration.ValidatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "!!!",
+				Name: "config",
 			},
 			Spec: admissionregistration.ValidatingAdmissionPolicyBindingSpec{},
 		},
@@ -5218,7 +5227,8 @@ func TestValidateMutatingAdmissionPolicyUpdate(t *testing.T) {
 		name: "should pass on valid new MutatingAdmissionPolicy",
 		config: &admissionregistration.MutatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicySpec{
 				FailurePolicy: func() *admissionregistration.FailurePolicyType {
@@ -5285,7 +5295,8 @@ func TestValidateMutatingAdmissionPolicyUpdate(t *testing.T) {
 		name: "should pass on valid new MutatingAdmissionPolicy with invalid old MutatingAdmissionPolicy",
 		config: &admissionregistration.MutatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicySpec{
 				FailurePolicy: func() *admissionregistration.FailurePolicyType {
@@ -5325,7 +5336,7 @@ func TestValidateMutatingAdmissionPolicyUpdate(t *testing.T) {
 		},
 		oldconfig: &admissionregistration.MutatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "!!!",
+				Name: "config",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicySpec{},
 		},
@@ -5470,7 +5481,8 @@ func TestValidateMutatingAdmissionPolicyUpdate(t *testing.T) {
 		},
 		config: &admissionregistration.MutatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicySpec{
 				MatchConstraints: &admissionregistration.MatchResources{
@@ -6028,7 +6040,8 @@ func TestValidateMutatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		name: "should pass on valid new MutatingAdmissionPolicyBinding",
 		config: &admissionregistration.MutatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicyBindingSpec{
 				PolicyName: "xyzlimit-scale.example.com",
@@ -6098,7 +6111,8 @@ func TestValidateMutatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		name: "should pass on valid new MutatingAdmissionPolicyBinding with invalid old ValidatingAdmissionPolicyBinding",
 		config: &admissionregistration.MutatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "config",
+				Name:            "config",
+				ResourceVersion: "1",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicyBindingSpec{
 				PolicyName: "xyzlimit-scale.example.com",
@@ -6132,7 +6146,7 @@ func TestValidateMutatingAdmissionPolicyBindingUpdate(t *testing.T) {
 		},
 		oldconfig: &admissionregistration.MutatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "!!!",
+				Name: "config",
 			},
 			Spec: admissionregistration.MutatingAdmissionPolicyBindingSpec{},
 		},

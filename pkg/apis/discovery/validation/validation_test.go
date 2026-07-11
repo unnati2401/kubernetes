@@ -815,7 +815,7 @@ func TestValidateEndpointSliceCreate(t *testing.T) {
 }
 
 func TestValidateEndpointSliceUpdate(t *testing.T) {
-	standardMeta := metav1.ObjectMeta{Name: "es1", Namespace: "test"}
+	standardMeta := metav1.ObjectMeta{Name: "es1", Namespace: "test", ResourceVersion: "1"}
 
 	testCases := map[string]struct {
 		expectedErrors      int

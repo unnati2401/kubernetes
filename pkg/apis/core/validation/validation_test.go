@@ -100,7 +100,7 @@ func newHostPathType(pathType string) *core.HostPathType {
 }
 
 func testVolume(name string, namespace string, spec core.PersistentVolumeSpec) *core.PersistentVolume {
-	objMeta := metav1.ObjectMeta{Name: name}
+	objMeta := metav1.ObjectMeta{Name: name, ResourceVersion: "1"}
 	if namespace != "" {
 		objMeta.Namespace = namespace
 	}
@@ -5790,8 +5790,9 @@ func createTestVolModePV(vmode *core.PersistentVolumeMode) *core.PersistentVolum
 	// PersistentVolume with VolumeMode set (valid and invalid)
 	pv := core.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "",
+			Name:            "foo",
+			Namespace:       "",
+			ResourceVersion: "1",
 		},
 		Spec: core.PersistentVolumeSpec{
 			Capacity: core.ResourceList{
@@ -5816,8 +5817,9 @@ func createTestPV() *core.PersistentVolume {
 	// PersistentVolume with VolumeMode set (valid and invalid)
 	pv := core.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "",
+			Name:            "foo",
+			Namespace:       "",
+			ResourceVersion: "1",
 		},
 		Spec: core.PersistentVolumeSpec{
 			Capacity: core.ResourceList{

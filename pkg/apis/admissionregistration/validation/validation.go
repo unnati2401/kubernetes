@@ -229,6 +229,12 @@ func ValidateValidatingWebhookConfiguration(e *admissionregistration.ValidatingW
 
 func validateValidatingWebhookConfiguration(e *admissionregistration.ValidatingWebhookConfiguration, opts validationOptions) field.ErrorList {
 	allErrors := genericvalidation.ValidateObjectMeta(&e.ObjectMeta, false, genericvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrors = append(allErrors, validateValidatingWebhookConfigurationSpec(e, opts)...)
+	return allErrors
+}
+
+func validateValidatingWebhookConfigurationSpec(e *admissionregistration.ValidatingWebhookConfiguration, opts validationOptions) field.ErrorList {
+	var allErrors field.ErrorList
 	hookNames := sets.NewString()
 	for i, hook := range e.Webhooks {
 		allErrors = append(allErrors, validateValidatingWebhook(&hook, opts, field.NewPath("webhooks").Index(i))...)
@@ -341,6 +347,12 @@ func findMutatingPolicyPreexistingExpressions(mutatingPolicy *admissionregistrat
 
 func validateMutatingWebhookConfiguration(e *admissionregistration.MutatingWebhookConfiguration, opts validationOptions) field.ErrorList {
 	allErrors := genericvalidation.ValidateObjectMeta(&e.ObjectMeta, false, genericvalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrors = append(allErrors, validateMutatingWebhookConfigurationSpec(e, opts)...)
+	return allErrors
+}
+
+func validateMutatingWebhookConfigurationSpec(e *admissionregistration.MutatingWebhookConfiguration, opts validationOptions) field.ErrorList {
+	var allErrors field.ErrorList
 
 	hookNames := sets.NewString()
 	for i, hook := range e.Webhooks {
@@ -726,7 +738,8 @@ func mutatingWebhookHasInvalidLabelValueInSelector(webhooks []admissionregistrat
 
 // ValidateValidatingWebhookConfigurationUpdate validates update of validating webhook configuration
 func ValidateValidatingWebhookConfigurationUpdate(newC, oldC *admissionregistration.ValidatingWebhookConfiguration) field.ErrorList {
-	return validateValidatingWebhookConfiguration(newC, validationOptions{
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	opts := validationOptions{
 		ignoreMatchConditions:                   ignoreValidatingWebhookMatchConditions(newC.Webhooks, oldC.Webhooks),
 		allowParamsInMatchConditions:            false,
 		requireNoSideEffects:                    validatingHasNoSideEffects(oldC.Webhooks),
@@ -734,12 +747,15 @@ func ValidateValidatingWebhookConfigurationUpdate(newC, oldC *admissionregistrat
 		requireUniqueWebhookNames:               validatingHasUniqueWebhookNames(oldC.Webhooks),
 		allowInvalidLabelValueInSelector:        validatingWebhookHasInvalidLabelValueInSelector(oldC.Webhooks),
 		preexistingExpressions:                  findValidatingPreexistingExpressions(oldC),
-	})
+	}
+	allErrors = append(allErrors, validateValidatingWebhookConfigurationSpec(newC, opts)...)
+	return allErrors
 }
 
 // ValidateMutatingWebhookConfigurationUpdate validates update of mutating webhook configuration
 func ValidateMutatingWebhookConfigurationUpdate(newC, oldC *admissionregistration.MutatingWebhookConfiguration) field.ErrorList {
-	return validateMutatingWebhookConfiguration(newC, validationOptions{
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	opts := validationOptions{
 		ignoreMatchConditions:                   ignoreMutatingWebhookMatchConditions(newC.Webhooks, oldC.Webhooks),
 		allowParamsInMatchConditions:            false,
 		requireNoSideEffects:                    mutatingHasNoSideEffects(oldC.Webhooks),
@@ -747,7 +763,9 @@ func ValidateMutatingWebhookConfigurationUpdate(newC, oldC *admissionregistratio
 		requireUniqueWebhookNames:               mutatingHasUniqueWebhookNames(oldC.Webhooks),
 		allowInvalidLabelValueInSelector:        mutatingWebhookHasInvalidLabelValueInSelector(oldC.Webhooks),
 		preexistingExpressions:                  findMutatingPreexistingExpressions(oldC),
-	})
+	}
+	allErrors = append(allErrors, validateMutatingWebhookConfigurationSpec(newC, opts)...)
+	return allErrors
 }
 
 const (
@@ -1237,10 +1255,13 @@ func validateParamRef(pr *admissionregistration.ParamRef, fldPath *field.Path) f
 
 // ValidateValidatingAdmissionPolicyUpdate validates update of validating admission policy
 func ValidateValidatingAdmissionPolicyUpdate(newC, oldC *admissionregistration.ValidatingAdmissionPolicy) field.ErrorList {
-	return validateValidatingAdmissionPolicy(newC, validationOptions{
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	opts := validationOptions{
 		ignoreMatchConditions:  ignoreValidatingAdmissionPolicyMatchConditions(newC, oldC),
 		preexistingExpressions: findValidatingPolicyPreexistingExpressions(oldC),
-	})
+	}
+	allErrors = append(allErrors, validateValidatingAdmissionPolicySpec(newC.ObjectMeta, &newC.Spec, opts, field.NewPath("spec"))...)
+	return allErrors
 }
 
 // ValidateValidatingAdmissionPolicyStatusUpdate validates update of status of validating admission policy
@@ -1250,7 +1271,9 @@ func ValidateValidatingAdmissionPolicyStatusUpdate(newC, oldC *admissionregistra
 
 // ValidateValidatingAdmissionPolicyBindingUpdate validates update of validating admission policy
 func ValidateValidatingAdmissionPolicyBindingUpdate(newC, oldC *admissionregistration.ValidatingAdmissionPolicyBinding) field.ErrorList {
-	return validateValidatingAdmissionPolicyBinding(newC)
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	allErrors = append(allErrors, validateValidatingAdmissionPolicyBindingSpec(&newC.Spec, field.NewPath("spec"))...)
+	return allErrors
 }
 
 func validateValidatingAdmissionPolicyStatus(status *admissionregistration.ValidatingAdmissionPolicyStatus, fldPath *field.Path) field.ErrorList {
@@ -1347,15 +1370,20 @@ func isCELIdentifier(name string) bool {
 
 // ValidateMutatingAdmissionPolicyUpdate validates update of mutating admission policy
 func ValidateMutatingAdmissionPolicyUpdate(newC, oldC *admissionregistration.MutatingAdmissionPolicy) field.ErrorList {
-	return validateMutatingAdmissionPolicy(newC, validationOptions{
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	opts := validationOptions{
 		ignoreMatchConditions:  ignoreMutatingAdmissionPolicyMatchConditions(newC, oldC),
 		preexistingExpressions: findMutatingPolicyPreexistingExpressions(oldC),
-	})
+	}
+	allErrors = append(allErrors, validateMutatingAdmissionPolicySpec(newC.ObjectMeta, &newC.Spec, opts, field.NewPath("spec"))...)
+	return allErrors
 }
 
 // ValidateMutatingAdmissionPolicyBindingUpdate validates update of mutating admission policy
 func ValidateMutatingAdmissionPolicyBindingUpdate(newC, oldC *admissionregistration.MutatingAdmissionPolicyBinding) field.ErrorList {
-	return validateMutatingAdmissionPolicyBinding(newC)
+	allErrors := genericvalidation.ValidateObjectMetaUpdate(&newC.ObjectMeta, &oldC.ObjectMeta, field.NewPath("metadata"))
+	allErrors = append(allErrors, validateMutatingAdmissionPolicyBindingSpec(&newC.Spec, field.NewPath("spec"))...)
+	return allErrors
 }
 
 // ValidateMutatingAdmissionPolicy validates a MutatingAdmissionPolicy before creation.

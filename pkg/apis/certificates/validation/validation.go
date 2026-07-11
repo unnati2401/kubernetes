@@ -181,6 +181,12 @@ var (
 func validateCertificateSigningRequest(csr *certificates.CertificateSigningRequest, opts certificateValidationOptions) field.ErrorList {
 	isNamespaced := false
 	allErrs := apivalidation.ValidateObjectMeta(&csr.ObjectMeta, isNamespaced, ValidateCertificateRequestName, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateCertificateSigningRequestSpec(csr, opts)...)
+	return allErrs
+}
+
+func validateCertificateSigningRequestSpec(csr *certificates.CertificateSigningRequest, opts certificateValidationOptions) field.ErrorList {
+	allErrs := field.ErrorList{}
 
 	specPath := field.NewPath("spec")
 	err := validateCSR(csr)
@@ -295,15 +301,15 @@ func ValidateCertificateSigningRequestApprovalUpdate(newCSR, oldCSR *certificate
 }
 
 func validateCertificateSigningRequestUpdate(newCSR, oldCSR *certificates.CertificateSigningRequest, opts certificateValidationOptions) field.ErrorList {
-	validationErrorList := validateCertificateSigningRequest(newCSR, opts)
-	metaUpdateErrorList := apivalidation.ValidateObjectMetaUpdate(&newCSR.ObjectMeta, &oldCSR.ObjectMeta, field.NewPath("metadata"))
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&newCSR.ObjectMeta, &oldCSR.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateCertificateSigningRequestSpec(newCSR, opts)...)
 
 	// prevent removal of existing Approved/Denied/Failed conditions
 	for _, t := range []certificates.RequestConditionType{certificates.CertificateApproved, certificates.CertificateDenied, certificates.CertificateFailed} {
 		oldConditions := findConditions(oldCSR, t)
 		newConditions := findConditions(newCSR, t)
 		if len(newConditions) < len(oldConditions) {
-			validationErrorList = append(validationErrorList, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not remove a condition of type %q", t)))
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not remove a condition of type %q", t)))
 		}
 	}
 
@@ -316,23 +322,23 @@ func validateCertificateSigningRequestUpdate(newCSR, oldCSR *certificates.Certif
 			case len(newConditions) < len(oldConditions):
 				// removals are prevented above
 			case len(newConditions) > len(oldConditions):
-				validationErrorList = append(validationErrorList, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not add a condition of type %q", t)))
+				allErrs = append(allErrs, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not add a condition of type %q", t)))
 			case !apiequality.Semantic.DeepEqual(oldConditions, newConditions):
 				conditionDiff := diff.Diff(oldConditions, newConditions)
-				validationErrorList = append(validationErrorList, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not modify a condition of type %q\n%v", t, conditionDiff)))
+				allErrs = append(allErrs, field.Forbidden(field.NewPath("status", "conditions"), fmt.Sprintf("updates may not modify a condition of type %q\n%v", t, conditionDiff)))
 			}
 		}
 	}
 
 	if !bytes.Equal(newCSR.Status.Certificate, oldCSR.Status.Certificate) {
 		if !opts.allowSettingCertificate {
-			validationErrorList = append(validationErrorList, field.Forbidden(field.NewPath("status", "certificate"), "updates may not set certificate content"))
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("status", "certificate"), "updates may not set certificate content"))
 		} else if !opts.allowResettingCertificate && len(oldCSR.Status.Certificate) > 0 {
-			validationErrorList = append(validationErrorList, field.Forbidden(field.NewPath("status", "certificate"), "updates may not modify existing certificate content"))
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("status", "certificate"), "updates may not modify existing certificate content"))
 		}
 	}
 
-	return append(validationErrorList, metaUpdateErrorList...)
+	return allErrs
 }
 
 // findConditions returns all instances of conditions of the specified type
@@ -484,6 +490,13 @@ func ValidateClusterTrustBundle(bundle *certificates.ClusterTrustBundle, opts Va
 
 	metaErrors := apivalidation.ValidateObjectMeta(&bundle.ObjectMeta, false, apivalidation.ValidateClusterTrustBundleName(bundle.Spec.SignerName), field.NewPath("metadata"))
 	allErrors = append(allErrors, metaErrors...)
+	allErrors = append(allErrors, validateClusterTrustBundleSpec(bundle, opts)...)
+
+	return allErrors
+}
+
+func validateClusterTrustBundleSpec(bundle *certificates.ClusterTrustBundle, opts ValidateClusterTrustBundleOptions) field.ErrorList {
+	var allErrors field.ErrorList
 
 	if bundle.Spec.SignerName != "" {
 		signerNameErrors := apivalidation.ValidateSignerName(field.NewPath("spec", "signerName"), bundle.Spec.SignerName)
@@ -510,8 +523,14 @@ func ValidateClusterTrustBundleUpdate(newBundle, oldBundle *certificates.Cluster
 	}
 
 	var allErrors field.ErrorList
-	allErrors = append(allErrors, ValidateClusterTrustBundle(newBundle, opts)...)
 	allErrors = append(allErrors, apivalidation.ValidateObjectMetaUpdate(&newBundle.ObjectMeta, &oldBundle.ObjectMeta, field.NewPath("metadata"))...)
+	allErrors = append(allErrors, validateClusterTrustBundleSpec(newBundle, opts)...)
+
+	namePath := field.NewPath("metadata", "name")
+	for _, msg := range apivalidation.ValidateClusterTrustBundleName(newBundle.Spec.SignerName)(newBundle.Name, false) {
+		allErrors = append(allErrors, field.Invalid(namePath, newBundle.Name, msg))
+	}
+
 	allErrors = append(allErrors, apivalidation.ValidateImmutableField(newBundle.Spec.SignerName, oldBundle.Spec.SignerName, field.NewPath("spec", "signerName")).WithOrigin("immutable").MarkAlpha().MarkCoveredByDeclarative()...)
 	return allErrors
 }

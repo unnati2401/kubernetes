@@ -418,7 +418,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 	newVolumeName := "bar"
 
 	old := storage.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source:   storage.VolumeAttachmentSource{},
@@ -428,7 +428,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 
 	successCases := []storage.VolumeAttachment{{
 		// no change
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source:   storage.VolumeAttachmentSource{},
@@ -436,7 +436,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// modify status
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source:   storage.VolumeAttachmentSource{},
@@ -484,7 +484,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 
 	errorCases := []storage.VolumeAttachment{{
 		// change attacher
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "another-attacher",
 			Source: storage.VolumeAttachmentSource{
@@ -494,7 +494,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// change source volume name
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source: storage.VolumeAttachmentSource{
@@ -504,7 +504,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// change node
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source: storage.VolumeAttachmentSource{
@@ -514,7 +514,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// change source
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source: storage.VolumeAttachmentSource{
@@ -524,7 +524,7 @@ func TestVolumeAttachmentUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// add invalid status
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", ResourceVersion: "1"},
 		Spec: storage.VolumeAttachmentSpec{
 			Attacher: "myattacher",
 			Source: storage.VolumeAttachmentSource{
@@ -1258,7 +1258,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 	featuregatetesting.SetFeatureGateEmulationVersionDuringTest(t, utilfeature.DefaultFeatureGate, version.MustParse("1.35"))
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.MutableCSINodeAllocatableCount, false)
 	old := storage.CSINode{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1275,7 +1275,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 
 	successCases := []storage.CSINode{{
 		// no change
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1290,7 +1290,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// remove a driver
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1300,7 +1300,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// add a driver
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1320,7 +1320,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// remove a driver and add a driver
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1343,7 +1343,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 
 	errorCases := []storage.CSINode{{
 		// invalid change node id
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1358,7 +1358,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change topology keys
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1373,7 +1373,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change trying to set a previously unset allocatable
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1389,7 +1389,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change trying to update allocatable with a different volume limit
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1404,7 +1404,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change trying to update allocatable with an empty volume limit
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1419,7 +1419,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change trying to remove allocatable
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1443,7 +1443,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.MutableCSINodeAllocatableCount, true)
 	successCases = []storage.CSINode{{
 		// valid change trying to update allocatable with a different volume limit
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1460,7 +1460,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 
 	errorCases = []storage.CSINode{{
 		// invalid change node id
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -1475,7 +1475,7 @@ func TestCSINodeUpdateValidation(t *testing.T) {
 		},
 	}, {
 		// invalid change topology keys
-		ObjectMeta: metav1.ObjectMeta{Name: "foo1"},
+		ObjectMeta: metav1.ObjectMeta{Name: "foo1", ResourceVersion: "1"},
 		Spec: storage.CSINodeSpec{
 			Drivers: []storage.CSINodeDriver{{
 				Name:         "io.kubernetes.storage.csi.driver-1",
@@ -2677,21 +2677,25 @@ func TestValidateVolumeAttributesClassUpdate(t *testing.T) {
 	}{
 		"invalid driverName update": {
 			oldClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 			},
 			newClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/bar",
 			},
 			shouldSucceed: false,
 		},
 		"invalid parameter update which changes values": {
 			oldClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{
 					"foo": "bar1",
 				},
 			},
 			newClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{
 					"foo": "bar2",
@@ -2701,10 +2705,12 @@ func TestValidateVolumeAttributesClassUpdate(t *testing.T) {
 		},
 		"invalid parameter update which add new item": {
 			oldClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{},
 			},
 			newClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{
 					"foo": "bar",
@@ -2714,12 +2720,14 @@ func TestValidateVolumeAttributesClassUpdate(t *testing.T) {
 		},
 		"invalid parameter update which remove a item": {
 			oldClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{
 					"foo": "bar",
 				},
 			},
 			newClass: &storage.VolumeAttributesClass{
+				ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
 				DriverName: "kubernetes.io/foo",
 				Parameters: map[string]string{},
 			},

@@ -120,8 +120,7 @@ func ValidateResourceClaim(resourceClaim *resource.ResourceClaim) field.ErrorLis
 
 // ValidateResourceClaimUpdate tests if an update to ResourceClaim is valid.
 func ValidateResourceClaimUpdate(resourceClaim, oldClaim *resource.ResourceClaim) field.ErrorList {
-	allErrs := corevalidation.ValidateObjectMeta(&resourceClaim.ObjectMeta, true, corevalidation.ValidateResourceClaimName, field.NewPath("metadata"))
-	allErrs = append(allErrs, corevalidation.ValidateObjectMetaUpdate(&resourceClaim.ObjectMeta, &oldClaim.ObjectMeta, field.NewPath("metadata"))...)
+	allErrs := corevalidation.ValidateObjectMetaUpdate(&resourceClaim.ObjectMeta, &oldClaim.ObjectMeta, field.NewPath("metadata"))
 	// The spec is immutable. On update, we only check for immutability.
 	// Re-validating other fields is skipped because the user cannot change them;
 	// the only actionable error is for the immutability violation.
@@ -568,12 +567,7 @@ func ValidateDeviceClass(class *resource.DeviceClass) field.ErrorList {
 
 // ValidateDeviceClassUpdate tests if an update to DeviceClass is valid.
 func ValidateDeviceClassUpdate(class, oldClass *resource.DeviceClass) field.ErrorList {
-	validateClassName := func(fldPath *field.Path, name string) field.ErrorList {
-		return validate.LongName(context.Background(), operation.Operation{}, fldPath, &name, nil).MarkCoveredByDeclarative()
-	}
-	// TODO(lalitc375): Remove this if decided in https://github.com/kubernetes/kubernetes/issues/134444.
-	allErrs := corevalidation.ValidateObjectMetaWithOpts(&class.ObjectMeta, false, validateClassName, field.NewPath("metadata"))
-	allErrs = append(allErrs, corevalidation.ValidateObjectMetaUpdate(&class.ObjectMeta, &oldClass.ObjectMeta, field.NewPath("metadata"))...)
+	allErrs := corevalidation.ValidateObjectMetaUpdate(&class.ObjectMeta, &oldClass.ObjectMeta, field.NewPath("metadata"))
 	allErrs = append(allErrs, validateDeviceClassSpec(&class.Spec, &oldClass.Spec, field.NewPath("spec"))...)
 	return allErrs
 }

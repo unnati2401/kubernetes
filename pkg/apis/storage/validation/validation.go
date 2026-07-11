@@ -133,12 +133,6 @@ func ValidateVolumeAttachment(volumeAttachment *storage.VolumeAttachment) field.
 	allErrs := apivalidation.ValidateObjectMeta(&volumeAttachment.ObjectMeta, false, apivalidation.ValidateClassName, field.NewPath("metadata"))
 	allErrs = append(allErrs, validateVolumeAttachmentSpec(&volumeAttachment.Spec, field.NewPath("spec"))...)
 	allErrs = append(allErrs, validateVolumeAttachmentStatus(&volumeAttachment.Status, field.NewPath("status"))...)
-	if volumeAttachment.Spec.Source.PersistentVolumeName != nil {
-		pvName := *volumeAttachment.Spec.Source.PersistentVolumeName
-		for _, msg := range apivalidation.ValidatePersistentVolumeName(pvName, false) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("spec.source.persistentVolumeName"), pvName, msg))
-		}
-	}
 	return allErrs
 }
 
@@ -149,6 +143,12 @@ func validateVolumeAttachmentSpec(
 	allErrs := apivalidation.ValidateCSIDriverName(spec.Attacher, fldPath.Child("attacher"), apivalidation.RequiredCovered, apivalidation.FormatCovered, apivalidation.SizeCovered)
 	allErrs = append(allErrs, validateVolumeAttachmentSource(&spec.Source, fldPath.Child("source"))...)
 	allErrs = append(allErrs, validateNodeName(spec.NodeName, fldPath.Child("nodeName"))...)
+	if spec.Source.PersistentVolumeName != nil {
+		pvName := *spec.Source.PersistentVolumeName
+		for _, msg := range apivalidation.ValidatePersistentVolumeName(pvName, false) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("source").Child("persistentVolumeName"), pvName, msg))
+		}
+	}
 	return allErrs
 }
 
@@ -224,7 +224,9 @@ func validateVolumeError(e *storage.VolumeError, fldPath *field.Path) field.Erro
 
 // ValidateVolumeAttachmentUpdate validates a VolumeAttachment.
 func ValidateVolumeAttachmentUpdate(new, old *storage.VolumeAttachment) field.ErrorList {
-	allErrs := ValidateVolumeAttachment(new)
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&new.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateVolumeAttachmentSpec(&new.Spec, field.NewPath("spec"))...)
+	allErrs = append(allErrs, validateVolumeAttachmentStatus(&new.Status, field.NewPath("status"))...)
 	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(new.Spec, old.Spec, field.NewPath("spec")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
 	return allErrs
 }
@@ -279,7 +281,8 @@ func ValidateCSINode(csiNode *storage.CSINode) field.ErrorList {
 
 // ValidateCSINodeUpdate validates a CSINode.
 func ValidateCSINodeUpdate(new, old *storage.CSINode) field.ErrorList {
-	allErrs := ValidateCSINode(new)
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&new.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateCSINodeSpec(&new.Spec, field.NewPath("spec"))...)
 
 	// Validate modifying fields inside an existing CSINodeDriver entry
 	for _, oldDriver := range old.Spec.Drivers {
@@ -598,20 +601,27 @@ func ValidateCSIStorageCapacityUpdate(capacity, oldCapacity *storage.CSIStorageC
 // ValidateVolumeAttributesClass validates a VolumeAttributesClass.
 func ValidateVolumeAttributesClass(volumeAttributesClass *storage.VolumeAttributesClass) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMeta(&volumeAttributesClass.ObjectMeta, false, apivalidation.ValidateClassName, field.NewPath("metadata"))
-	allErrs = append(allErrs, validateProvisioner(volumeAttributesClass.DriverName, field.NewPath("driverName"))...)
-	allErrs = append(allErrs, validateParameters(volumeAttributesClass.Parameters, false, field.NewPath("parameters"))...)
+	allErrs = append(allErrs, validateVolumeAttributesClassSpec(volumeAttributesClass, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// validateVolumeAttributesClassSpec validates a VolumeAttributesClassSpec.
+func validateVolumeAttributesClassSpec(volumeAttributesClass *storage.VolumeAttributesClass, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, validateProvisioner(volumeAttributesClass.DriverName, fldPath.Child("driverName"))...)
+	allErrs = append(allErrs, validateParameters(volumeAttributesClass.Parameters, false, fldPath.Child("parameters"))...)
 	return allErrs
 }
 
 // ValidateVolumeAttributesClassUpdate tests if an update to VolumeAttributesClass is valid.
 func ValidateVolumeAttributesClassUpdate(volumeAttributesClass, oldVolumeAttributesClass *storage.VolumeAttributesClass) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMetaUpdate(&volumeAttributesClass.ObjectMeta, &oldVolumeAttributesClass.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateVolumeAttributesClassSpec(volumeAttributesClass, field.NewPath("spec"))...)
 	if volumeAttributesClass.DriverName != oldVolumeAttributesClass.DriverName {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("driverName"), "updates to driverName are forbidden."))
 	}
 	if !reflect.DeepEqual(oldVolumeAttributesClass.Parameters, volumeAttributesClass.Parameters) {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("parameters"), "updates to parameters are forbidden."))
 	}
-	allErrs = append(allErrs, ValidateVolumeAttributesClass(volumeAttributesClass)...)
 	return allErrs
 }
